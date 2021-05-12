@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="https://unpkg.com/aframe@0.8.2/dist/aframe-master.js"></script>
+	<script src="https://unpkg.com/aframe-extras@4.1.2/dist/aframe-extras.loaders.min.js"></script>
+	<script src="https://unpkg.com/three@0.95.0/examples/js/libs/inflate.min.js"></script>
+	<script src="aframe-fbx-material.js"></script>
+</head>
+<body>
+	<script>
+	AFRAME.registerComponent('material-update', {
+		multiple : true,
+		schema: {
+			ambient: { default: null, type: 'color'},
+			color: { default: null, type: 'color' },
+			emissive: { default: null, type: 'color' },
+			envMap: { default: '', type: 'map' },
+			// fog: { default: true },
+			// metalness: { default: null, type: 'number' },
+			// metalnessMap: { default: null, type: 'map' },
+			normalMap: { default: '', type: 'map' },
+			opacity: { default: null, type: 'number' },
+			reflectivity: { default: null, type: 'number' },
+			// repeat: { default: '' },
+			roughness: { default: null, type: 'number' },
+			roughnessMap: {default: null, type: 'map' },
+			shininess: { default: null, type: 'number' },
+			specular: { default: null, type: 'color' },
+			specularMap: { default: '', type: 'map' },
+			shader: { default: 'standard', oneOf: ['flat', 'standard'] },
+			// side: { default: 'front', oneOf: ['front', 'back', 'double'] },
+			target: { default: '' },
+			map: { default: '', type: 'map' },
+			transparent: { default: false },
+		},
+
+		init() {
+			var data = this.data;
+			var schema = this.schema;
+
+
+			this.el.addEventListener('model-loaded', e => {
+
+				// get 3d object
+				object = e.detail.model;
+
+				console.log(object);
+
+				// traverse all object nodes
+				object.traverse(node => {
+
+					// if node is a mesh (geometry + material)
+					if (node.isMesh) {
+
+						if (data.target !== '' && node.name !== data.target)
+							return;
+
+						// grab the node material
+						let m = node.material;
+						// m.needsUpdate = true;
+
+						// loop through all components
+						for (var prop in data){
+
+							// grab the component value
+							var d = data[prop];
+
+							if (d === null || d === '')
+								return;
+
+							// check the value type, referencing the schema
+							switch (schema[prop].type){
+								case 'map':
+									var src = (d.nodeType > 0) ? d.getAttribute('src') : d;
+									console.log('changed',prop,'from:',m[prop].name,'to:',src);
+									m[prop] = new THREE.TextureLoader().load(src);
+								break;
+								case 'color':
+									console.log('changed',prop,'from:',m[prop],'to:',d);
+									m[prop] = new THREE.Color(d);
+								break;
+								case 'number':
+									console.log('changed',prop,'from:',m[prop],'to:',d);
+									m[prop] = d;
+								break;
+							}
+						}
+					}
+				});
+			});
+		},
+		update() {
+		}
+	});
+	</script>
+	<a-scene background="color: blue">
+		<a-assets>
+			<img id="diffuse" src="./assets/MariaDiffuse.png">
+			<img id="normal" src="./assets/MariaNormal.png">
+			<img id="specular" src="./assets/MariaSpecular.png">
+		</a-assets>
+		<a-entity
+			fbx-model="src: url(./assets/Maria.fbx)"
+			material-update="map: #diffuse; normalMap: #normal; specularMap: #specular"
+			position="0 0 -2"
+			scale=".01 .01 .01"
+		></a-entity>
+	</a-scene>
+</body>
+</html>
+
